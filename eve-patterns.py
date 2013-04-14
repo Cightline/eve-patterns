@@ -23,9 +23,9 @@ class Pattern():
                         if item != "":
                             self.data[item] = []
                             
-                # c is the index of the key, and we can use it
-                # to tell what piece of data we are looking at
-                # as long as everything stays in order. 
+                # index is the index of the key (and iteration), 
+                #and we can use it to tell what piece of data we 
+                #are looking at as long as everything stays in order. 
                 self.data[self.keys[index]].append(row[index])
                 
                 index += 1            

@@ -8,9 +8,6 @@ import xml.etree.ElementTree as ET
 
 import sqlite3
 
-#2029092
-#x9SJvH5TfgJ1EfH2uD2qMXgeoCW5A5TE1VCgcPaAVJ7lJEQKqqUVgSo4zN6ZRJKx
-
 
 class eve_api():
     def __init__(self):
@@ -26,7 +23,8 @@ class eve_api():
                      "account_balance":"/char/AccountBalance.xml.aspx",
                      "wallet_transactions":"/char/WalletTransactions.xml.aspx",
                      "wallet_journal":"/char/WalletJournal.xml.aspx",
-                     "market_orders":"/char/MarketOrders.xml.aspx"}
+                     "market_orders":"/char/MarketOrders.xml.aspx",
+                     "asset_list":"/char/AssetList.xml.aspx"}
 
 
     def import_api_key(self, path):
@@ -65,11 +63,13 @@ class eve_api():
         return bytes(urllib.parse.urlencode(data), 'utf-8')
 
 
-    def get_page(self, url, data=None):
-        if data == None:
-            return urllib.request.urlopen(url)
+    def get_page(self, short_url, use_api_key=True):
+        url = "%s/%s" % (self.urls["base"], self.urls[short_url])
+
+        if use_api_key != True:
+            return self.manage_xml(urllib.request.urlopen(url))
         else:
-            return urllib.request.urlopen(url, data)
+            return self.manage_xml(urllib.request.urlopen(url, self.encode_data(self.api_key)))
 
 
     def manage_xml(self, page):
@@ -77,10 +77,7 @@ class eve_api():
 
 
     def import_transactions(self):
-        page = self.get_page("%s/%s" % (self.urls["base"], self.urls["wallet_transactions"]), 
-                                        self.encode_data(self.api_key))
-
-        root = self.manage_xml(page)
+        root = self.get_page("wallet_transactions")
 
         #if not self.keys:
         #    self.keys = tuple(list(page.iter('rowset'))[0].attrib['columns'].split(','))
@@ -111,19 +108,14 @@ class eve_api():
 
         
     def account_balance(self):
-        page = self.get_page("%s/%s" % (self.urls["base"], self.urls["account_balance"]), 
-                                        self.encode_data(self.api_key))
-        root = self.manage_xml(page)
+        root = self.get_page("account_balance")
         
         #print(list(root.iter("row"))[0].attrib["balance"]) <-- save for later
         print("Balance: %s ISK" % (list(root.iter("row"))[0].attrib["balance"]))
 
 
     def import_journal(self):
-        page = self.get_page("%s/%s" % (self.urls["base"], self.urls["wallet_journal"]), 
-                                        self.encode_data(self.api_key))
-
-        root = self.manage_xml(page)
+        root = self.get_page("wallet_journal")
 
         for item in root.iter("row"):
             self.cursor.execute('''insert or replace into journal (argName1, ownerID1, ownerID2, date, 
@@ -147,12 +139,16 @@ class eve_api():
         root.clear()
         self.db.commit()
 
+    def import_assets(self):
+        root = self.get_page("asset_list")
 
+    #def calculate_job_profit(self, 
+    #def calc_brokers_fee(self):
+    #    fee = 1.000 - (0.050 * self.skill["b
 
-
-
-api = eve_api()
-api.import_api_key('api_key')
-api.connect_db('transactions.db')
-api.import_journal()
-api.import_transactions()
+if __name__ == "__main__":
+    api = eve_api()
+    api.import_api_key('api_key')
+    api.connect_db('transactions.db')
+    api.import_journal()
+    api.import_transactions()
